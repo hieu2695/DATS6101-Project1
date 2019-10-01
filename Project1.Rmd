@@ -56,19 +56,9 @@ str(movies_new)
 #### 3.1 SMART Question
 ##### Does the genre has any effects on the classification of audiences and which genre achieve highest voting averages in three time intervals: 1986-1999, 2000-2010, and 2010-2016?
 
-#### 3.2 Test the dependence of genres and ratings
+#### 3.2 Number of published movies by genre:
 
-Movie ratings explanation:
-
-* G – General Audiences: All ages admitted. Nothing that would offend parents for viewing by children.
-* PG – Parental Guidance Suggested: Some material may not be suitable for children. Parents urged to give "parental guidance". May contain some material parents might not like for their young children.
-* PG-13 – Parents Strongly Cautioned: Some material may be inappropriate for children under 13. Parents are urged to be cautious. Some material may be inappropriate for pre-teenagers.
-* R – Restricted: Under 17 requires accompanying parent or adult guardian. Contains some adult material. Parents are urged to learn more about the film before taking their young children with them.
-* NC-17 – Adults Only: No One 17 and Under Admitted. Clearly adult. Children are not admitted.
-
-
-
-* We will take a look at the number of movies published in each genre from 1986-2016. Any small size samples (the number of movies published is smaller than 50) will not be inlcuded in analysis to ensure reasonable results.
+* We will take a look at the number of published movies in each genre from 1986-2016. A
 
 ```{r count, echo = F, include = T}
 
@@ -93,6 +83,20 @@ ggplot(movies_new, aes(x=genre, fill = genre)) +
 
 ```
 
+* As we see from the table and the bar charts, there were 7 famous genres with many published movies: Action, Adventure, Animation, Biography, Comedy, Crime, Drama, and Horror, in which Action, Comedy and Drama are the genres that have most products, whereas Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller, War and Western movies seemed not to be preferred by film companies and directors. Indeed, 7 famous genres also included the elements of Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller. And War and Western movies seem not to interest viewers as they focus a lot on historical events and stories which appear frequently in papers, books and documentaries.
+
+* Later, any small size samples (the number of movies published is smaller than 50) will not be inlcuded in analysis to ensure reasonable results. We will only focus on most famous genres.
+
+
+#### 3.3 Test dependence of genre and rating:
+
+Movie ratings explanation:
+
+* G – General Audiences: All ages admitted. Nothing that would offend parents for viewing by children.
+* PG – Parental Guidance Suggested: Some material may not be suitable for children. Parents urged to give "parental guidance". May contain some material parents might not like for their young children.
+* PG-13 – Parents Strongly Cautioned: Some material may be inappropriate for children under 13. Parents are urged to be cautious. Some material may be inappropriate for pre-teenagers.
+* R – Restricted: Under 17 requires accompanying parent or adult guardian. Contains some adult material. Parents are urged to learn more about the film before taking their young children with them.
+* NC-17 – Adults Only: No One 17 and Under Admitted. Clearly adult. Children are not admitted.
 
 * Create Contigency Table:
 
@@ -141,7 +145,7 @@ chitest2$p.value
 * The p-value in the chi-squared test is `r chitest2$p.value` is close to 0, much smaller than significance level (0.05). Therefore, we reject the null.
 * Conclusion: The movie genre and rating are NOT independent.
 
-#### 3.3 Genres with most votes
+#### 3.4 Genres with most votes
 * To have a better observation, we will divide our reseacrh period into three time intervals: 1986-1999, 2000-2009, 2010-2016
 * Then, we save our movies data into three datasets.
 
