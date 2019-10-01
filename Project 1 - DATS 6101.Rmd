@@ -30,6 +30,8 @@ loadPkg = function(x) { if (!require(x,character.only=T, quietly =F)) { install.
 ```{r dataclean, echo = F, message = F}
 
 loadPkg("ggplot2")
+loadPkg("dplyr")
+
 # read dataset
 movies <- read.csv("movies.csv")
 
@@ -56,7 +58,7 @@ str(movies_new)
 #### 3.1 SMART Question
 ##### Does the genre has any effects on the classification of audiences and which genre achieve highest voting averages in three time intervals: 1986-1999, 2000-2010, and 2010-2016?
 
-#### 3.2 Number of published movies by genre:
+#### 3.2 Number of published movies by genres:
 
 * We will take a look at the number of published movies in each genre from 1986-2016. A
 
@@ -83,12 +85,12 @@ ggplot(movies_new, aes(x=genre, fill = genre)) +
 
 ```
 
-* As we see from the table and the bar charts, there were 7 famous genres with many published movies: Action, Adventure, Animation, Biography, Comedy, Crime, Drama, and Horror, in which Action, Comedy and Drama are the genres that have most products, whereas Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller, War and Western movies seemed not to be preferred by film companies and directors. Indeed, 7 famous genres also included the elements of Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller. And War and Western movies seem not to interest viewers as they focus a lot on historical events and stories which appear frequently in papers, books and documentaries.
+* As we see from the table and the bar charts, there were 8 famous genres with many published movies: Action, Adventure, Animation, Biography, Comedy, Crime, Drama, and Horror, in which Action, Comedy and Drama are the genres that have most products, whereas Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller, War and Western movies seemed not to be preferred by film companies and directors. Indeed, 8 famous genres also included the elements of Family, Fantasy, Musical, Mystery, Romance, Sci-Fi, Thriller. And War and Western movies seem not to interest viewers as they focus a lot on historical events and stories which appear frequently in papers, books and documentaries.
 
 * Later, any small size samples (the number of movies published is smaller than 50) will not be inlcuded in analysis to ensure reasonable results. We will only focus on most famous genres.
 
 
-#### 3.3 Test dependence of genre and rating:
+#### 3.3 Test the dependence of genre and rating:
 
 Movie ratings explanation:
 
@@ -113,7 +115,7 @@ contable2
 
 * Chi-squared Test:
 
-```{r chitest, echo = F, include = T}
+```{r chitest, echo = F, include = T, warning = F}
 
 # chi-square test
 #chitest1 <- chisq.test(contable1)
@@ -142,10 +144,11 @@ chitest2$p.value
 ```
 
 * Null Hypothesis: The movie genre and its rating are independent.
-* The p-value in the chi-squared test is `r chitest2$p.value` is close to 0, much smaller than significance level (0.05). Therefore, we reject the null.
+* The p-value in the chi-squared test is `r chitest2$p.value` that is much smaller than the significance level (0.05). Therefore, we reject the null.
 * Conclusion: The movie genre and rating are NOT independent.
 
 #### 3.4 Genres with most votes
+
 * To have a better observation, we will divide our reseacrh period into three time intervals: 1986-1999, 2000-2009, 2010-2016
 * Then, we save our movies data into three datasets.
 
@@ -164,15 +167,18 @@ pltm = function(x) {
   vote_avg <- c("")
   j = 1
   
-  for(i in genrelist) {vote_avg[j] <- mean((subset(x, x$genre == i))$votes, na.rm = T); j = j + 1}
+  for(i in genrelist) {vote_avg[j] <- mean((subset(x, x$genre == i))$votes, na.rm = T)*(1e-3); j = j + 1}
   
   df = data.frame(meanvote = vote_avg, genrevote = genrelist)
   df$meanvote <- as.numeric(as.character(df$meanvote))
-  p <- ggplot(df, aes(x=genrevote, y=meanvote, fill = genrevote)) +
-    geom_bar(stat = "identity") +
-    xlab("Genre") +
-    ylab("Votes Mean (thousands)") +
-    guides(fill=guide_legend(title="Genre"))
+  
+  p <- ggplot(df, aes(x="", y=meanvote, fill = genrevote)) +
+    geom_bar(width=1, stat = "identity", color = "white") +
+    coord_polar("y", start=0) +
+    guides(fill=guide_legend(title="Genre")) +
+    theme(axis.text  = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
+    geom_text(aes(label = paste0( scales::percent(meanvote / sum(meanvote)))), position = position_stack(vjust = 0.5))
+  
 
   
   
@@ -189,26 +195,28 @@ pltm = function(x) {
 
 # Mean votes distribution 1986-1999
 pltm(movies1) +
-  ggtitle("Vote Averages distribution by Genres in 1986-1999") +
+  ggtitle("Vote Means distribution by Genres in 1986-1999") +
   theme(plot.title = element_text(hjust = 0.5)) 
  
 
 # Mean votes distribution 2000-2009
 pltm(movies2) +
-  ggtitle("Vote Averages distribution by Genres in 2000-2009") +
+  ggtitle("Vote Means distribution by Genres in 2000-2009") +
   theme(plot.title = element_text(hjust = 0.5))
 
 # Mean votes distribution 2010-2016
 pltm(movies3) +
-  ggtitle("Vote Averages distribution by Genres in 2010-2016") +
+  ggtitle("Vote Means distribution by Genres in 2010-2016") +
   theme(plot.title = element_text(hjust = 0.5))
 
 
 ```
 
-* As we see from the plots: During the first period, Animation and Crime were the most favorite genres. In the second period, Action and Adventure grew as the most favorite genres and in recent years, these two genres still have maintained their posistions.
-* Comedy seems to be the least interested genre as over the period it always receive least votes.
-* Animation seems to be the most consistent movie genre since it is always placed in top 3 of votes. 
+* As we see from the plots: Action, Animation, Adventure and Crime are always the top genres with most votes.
+* During the first period, Animation and Crime were the most favorite genres. In the second period, Action and Adventure grew as the most favorite genres and in recent years, these two genres still have maintained their posistions. 
+* In contrast, Animation and Crime had a significance backward after three periods. Although they still are in top 4 genres with most votes, their first and second places were taken by Action and Adventure.
+* Comedy and Horror seems to be the least interested genres as they always receive least votes.
+
 
 ### Chapter 4: Movie Scores
 #### 4.1 SMART Question
@@ -302,9 +310,10 @@ ggplot() +
   
 ```
 
-* As shown in the boxplots, the following pairs have pretty the same tail boxplots and overlapped interquartile ranges: Action-Comedy, Animation-Crime, Animation-Drama and Crime-Drama.
-* This illustrates that these pairs seem to be NOT significant in their mean values. We will confirm with a Tukey test.
-* We will conduct an ad hoc procedure to see which pairs are significant.
+* As shown in the boxplots, the following pairs have pretty the same tall boxplots and overlapped interquartile ranges: Action-Comedy, Animation-Crime, Animation-Drama and Crime-Drama.
+* This illustrates that these pairs seem to be NOT significant in their mean values. 
+* The other pairs show pretty clear differences in their boxplots, meaning that they are significant at 0.05 level.
+* We will conduct an ad hoc procedure using Tukey test to see which pairs are significant and check whether our visualization is correct. 
 
 ```{r TukeyTest1, echo = F, include = T}
 
@@ -313,7 +322,8 @@ tukey1
 ```
 
 
-* As we see from our Tukey test, there are no significant differences in score means of the following pairs: Action-Comedy, Animation-Crime, Animation-Drama, Crime-Drama.
+* As we see from our Tukey test, there are no significant differences in score means of the following pairs: Action-Comedy, Animation-Crime, Animation-Drama, Crime-Drama, while the other pairs are significant.
+* Our observation is pretty correct.
 
 ##### By ratings:
 
@@ -337,7 +347,8 @@ ggplot() +
   
 ```
 
-
+* As shown in the boxplots, the five boxes overlapped with each other and their medians also line within other boxes' interquartiles. Therefore, if we observe these boxplots, we will feel that their means are not significant.
+* We will conduct a Tukey Test to see whether our visualization is correct.
 
 ```{r TukeyTest2, echo = F, include = T}
 
@@ -347,6 +358,7 @@ tukey2
 
 * As we see from our Tukey test, there are significant differences in score means of the following pairs: PG-13 & R, PG & R, PG & PG-13, G & PG.
 * The other pairs are not significnace at 0.05 level.
+* Our obsevation from the boxplots is not correct at all.
 
 
 ### Chapter 5: Profit and Return on Investment
@@ -365,5 +377,11 @@ Calulate ROI and mapping plot (x=budget, y=ROI, color by genre/rating)
 
 ### Chapter 6: 
 For chapter 6, we can use countries to analyze but it will be very long. So we can have another option is to use ROI as our chapter 6.
+
+```{r country, echo =F}
+table(movies_new$country)
+
+
+```
 
 ### Chapter 7: Conclusion
