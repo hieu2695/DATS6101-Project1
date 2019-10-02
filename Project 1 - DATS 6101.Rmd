@@ -155,7 +155,7 @@ ggplot(data = movies_new, aes(x = year)) +
 
 ### Chapter 3: Movie categories
 #### 3.1 SMART Question
-##### Does the genre has any effects on the classification of audiences and which genre achieve highest voting averages in three time intervals: 1986-1999, 2000-2010, and 2010-2016?
+##### Does the genre has any effects on the movie ratings and which genre achieve highest voting averages in three time intervals: 1986-1999, 2000-2010, and 2010-2016?
 
 #### 3.2 Number of published movies by genres:
 
