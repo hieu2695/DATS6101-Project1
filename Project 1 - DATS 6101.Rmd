@@ -1,6 +1,6 @@
 ---
 title: "Project 1 - DATS 6101"
-author: "GROUP NAME"
+author: "Randomly-Generated: Le Tran Hieu "
 date: "9/29/2019"
 output:
    html_document: 
@@ -21,38 +21,137 @@ loadPkg = function(x) { if (!require(x,character.only=T, quietly =F)) { install.
 
 
 ### Chapter 2: Description of Data
+
 #### 2.1 Source Data
-#### 2.2 Clean Data
 
-* For our project, we will remove all movies that are television or DvDs versions and focus on movies published at theatre/ cinema.
-* Change all movies with budget = 0 to NA.
+The links for the dataset is: https://www.kaggle.com/danielgrijalvas/movies , which was separated from IMDB.
+ 
+#### 2.2 Data Explanation
 
-```{r dataclean, echo = F, message = F}
+There are 6820 movies in the dataset from 1986-2016. 
+
+Explanation for columns attributes:
+
+* budget: the budget of a movie
+* company: the movie company
+* country: the country that produces the movie
+* director: the director of the movie
+* genre: the main genre of the movie
+* gross: revenue of the movie
+* name: name of the movie
+* rating: a system determines the suitability of movies for different audiences (classified by ages)
+* released: release date (YYYY-MM-DD)
+* runtime: the duration of the movie
+* score: IMDB user rating
+* votes: the number of user votes
+* star: the main actor/actress
+* writer: the writer of the movie
+* year: the year of release
+
+
+
+For our project, we will remove all movies that are television or DvDs versions (which did not follow the Motion Picture Association of America (MPAA) film rating system ) and focus on movies published at theatre/cinema since our goal is to research the theatrical exhibition.
+
+Movie ratings explanation according to MPAA system:
+
+* G – General Audiences: All ages admitted. Nothing that would offend parents for viewing by children.
+* PG – Parental Guidance Suggested: Some material may not be suitable for children. Parents urged to give "parental guidance". May contain some material parents might not like for their young children.
+* PG-13 – Parents Strongly Cautioned: Some material may be inappropriate for children under 13. Parents are urged to be cautious. Some material may be inappropriate for pre-teenagers.
+* R – Restricted: Under 17 requires accompanying parent or adult guardian. Contains some adult material. Parents are urged to learn more about the film before taking their young children with them.
+* NC-17 – Adults Only: No One 17 and Under Admitted. Clearly adult. Children are not admitted.
+ 
+
+#### 2.3 Data Cleaning
+
+Step 1: Load dataset from csv file and save it as movies dataframe.
+
+
+```{r load_data, echo = F, message = F}
 
 loadPkg("ggplot2")
 loadPkg("dplyr")
 
 # read dataset
 movies <- read.csv("movies.csv")
+str(movies)
+
+```
+
+Step 2: Clean the dataframe. We will save new dataset as movies_new
+
+* Change all movies with budget = 0 to NA.
+
+```{r NAs, echo = F}
 
 # assign NA to movies with budget = 0 
 movies$budget <- replace(movies$budget,movies$budget==0, NA)
 
-#unique(movies$rating) # check rating types
-#unique(movies$genre) # check genre types
+```
+
+* Remove movies that are TV or DVDs versions.
+
+```{r ratings_rework, echo = F}
 
 # filter for movies with MPAA film rating system 
 movies_new <- subset(movies, movies$rating%in%c("G","NC-17","PG-13","R","PG"))
-# movies$genre%in%c("Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Horror"))
+
 
 # apply factor again to new dataset
 movies_new$rating <- factor(movies_new$rating) 
 movies_new$genre <- factor(movies_new$genre)
+```
+
+* Remove duplicated data. Fortunately, all the data are distinct.
+
+```{r duplicates, echo = F}
+# remove duplicates if they exist
+movies_new <- unique(movies_new)
+
+```
+
+* remove columns that will not be used
+
+```{r rmcol, echo = F}
+
+movies_new <- subset(movies_new, select = - c(company,director,released,runtime,star,writer))
+
+```
+
+* Since we will work on profit and return on investment later, we will create 2 new columns in the dataframe
+
+```{r createcol, echo = F}
+
+movies_new$profit <- movies_new$gross - movies_new$budget # create profit column
+
+movies_new$roi <- (movies_new$profit)*100/(movies_new$budget) # create ROI column
+
+
+
+```
+
+* Show our new dataframe movies_new
+
+```{r datastructure, echo = F}
+# show dataframe structure
 str(movies_new)
 
 
 ```
 
+#### 2.3 Data Visualization
+
+```{r datahist, echo = F, include = T}
+
+ggplot(data = movies_new, aes(x = year)) +
+  geom_histogram(alpha = 0.5, fill = "blue", col = "red", binwidth = 1) +
+  ggtitle("Histogram of published movies from 1986-2016") +
+  xlab("Year") +
+  ylab("Number of Movies") +
+  theme(plot.title = element_text(hjust=0.5))
+  
+
+
+```
 
 ### Chapter 3: Movie categories
 #### 3.1 SMART Question
@@ -89,6 +188,14 @@ ggplot(movies_new, aes(x=genre, fill = genre)) +
 
 * Later, any small size samples (the number of movies published is smaller than 50) will not be inlcuded in analysis to ensure reasonable results. We will only focus on most famous genres.
 
+```{r save_a_genrelist, echo = F, inlcude = F}
+# save 8 most famous genres into a vector
+fullgenrelist = c("Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Family","Fantasy","Horror","Musical","Mystery","Romance", "Sci-Fi","Thriller", "War","Western")
+genrelist = c("Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Horror")
+
+
+```
+
 
 #### 3.3 Test the dependence of genre and rating:
 
@@ -104,12 +211,14 @@ Movie ratings explanation:
 
 ``` {r contable, echo = F, include = T}
 
-#contable1 = table(movies_new$rating, movies_new$genre)
-#contable1
+# create contigency table
+
+contable1 = table(movies_new$rating, movies_new$genre)
+contable1
 
 # create contigency table
-contable2 = table(movies_fam$rating, movies_fam$genre)
-contable2
+#contable2 = table(movies_fam$rating, movies_fam$genre)
+#contable2
 
 ````
 
@@ -118,34 +227,35 @@ contable2
 ```{r chitest, echo = F, include = T, warning = F}
 
 # chi-square test
-#chitest1 <- chisq.test(contable1)
+chitest1 <- chisq.test(contable1)
 
 # results
-#chitest1
-#chitest1$statistic
-#chitest1$parameter
-#chitest1$expected
-#chitest1$p.value
+chitest1
+chitest1$statistic
+chitest1$parameter
+chitest1$expected
+chitest1$p.value
 
 
 # chi-square test with famous genres (large-size samples)
 
 
 # chi-square test
-chitest2 <- chisq.test(contable2)
+#chitest2 <- chisq.test(contable2)
 
 # results
-chitest2
-chitest2$statistic
-chitest2$parameter
-chitest2$expected
-chitest2$p.value
+#chitest2
+#chitest2$statistic
+#chitest2$parameter
+#chitest2$expected
+#chitest2$p.value
 
 ```
 
 * Null Hypothesis: The movie genre and its rating are independent.
-* The p-value in the chi-squared test is `r chitest2$p.value` that is much smaller than the significance level (0.05). Therefore, we reject the null.
+* The p-value in the chi-squared test is `r chitest1$p.value` that is much smaller than the significance level (0.05). Therefore, we reject the null.
 * Conclusion: The movie genre and rating are NOT independent.
+* Therefore, movie genre and rating are related to each other.
 
 #### 3.4 Genres with most votes
 
@@ -222,15 +332,16 @@ pltm(movies3) +
 #### 4.1 SMART Question
 ##### Is there any relationships between the votes and the scores and are the score means the same across all genres and all ratings?
 
+
 #### 4.2 Scores and Votings Relationship
 
 * We divide votes and scores into different categories:
 
 Votes:
 
-- High votes: from 10^6, describes the movies with most audiences' favorite
-- Medium votes: from 50000 to below 10^6
-- Low votes: below 500000, describes the movies with least interest
+- High votes: from 1,000,000  
+- Medium votes: from 500,000 to below 1,000,000
+- Low votes: below 500,000
 
 Scores:
 
@@ -361,27 +472,290 @@ tukey2
 * Our obsevation from the boxplots is not correct at all.
 
 
-### Chapter 5: Profit and Return on Investment
-#### 5.1 Profit
+### Chapter 5: Movie Commerce
 
-Calculate profit and mapping plot (x=budget, y=profit, color by genre/rating)
+#### 5.1 SMART Question
 
-#### 5.2 Return on Investment
+##### Which genres are good selections for commercial success? Analyzing the profit and the return on investment (ROI) of different genres from 1986 - 2016 to give suggestions to the movie companies. 
 
-Calulate ROI and mapping plot (x=budget, y=ROI, color by genre/rating)
-
-#### 5.3 Profit and Votes Relationship
-
-#### 5.4 Profit and Scores Relationship
+#### 5.2 Profit
 
 
-### Chapter 6: 
-For chapter 6, we can use countries to analyze but it will be very long. So we can have another option is to use ROI as our chapter 6.
 
-```{r country, echo =F}
-table(movies_new$country)
+```{r profitboxplots, echo=F, warning=F}
+
+outliers <- boxplot(data=movies_fam, profit ~ genre, plot = F)$out
+
+movies_fam_noOut <- subset(movies_fam, ! movies_fam$profit%in%outliers)
+
+ggplot() +
+  geom_boxplot(data = movies_fam, aes(x=genre, y=(profit*(1e-6)), fill=genre)) +
+  ggtitle("Profit distribution by genres") +
+  xlab("Genre") +
+  ylab("Profit (millions USD)") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+
+ggplot() +
+  geom_boxplot(data = movies_fam_noOut, aes(x=genre, y=(profit*(1e-6)), fill=genre)) +
+  ggtitle("Profit distribution by genres without outliers") +
+  xlab("Genre") +
+  ylab("Profit (millions USD)") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+
+```
+
+* Both the most net-income movie and the most net-loss movie belong to Action genre. 
+* The Animation and Horror have their median lines at the highest positions, showing that these two genres provide good ratio of profitable movies. It is a safe choice for companies and directors to produce movies of Animation and Horor.
+* Animation is significantly postive-skewed, meaning that its mean value is very high compare to its median. We can predict that Animation has the highest average of profit (estimated profit per film/movie).
+
+* We observe the ratio of profitable movies in each genre: 
+
+
+```{r ratioProfit, echo=F, include=T}
+
+gain_mv <- subset(movies_fam, movies_fam$profit > 0)
+#loss_mv <- subset(movies_fam, movies_fam$profit < 0 | movies_fam$profit == 0)
+
+genrelist = c("Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Horror")
+
+ratio <- c("")
+j= 1
+
+# ratio (numbers of movie with positive income)/(numbers of movie) by each genre
+
+for(i in genrelist) {ratio[j] <- nrow(subset(gain_mv, gain_mv$genre == i))*100/nrow(subset(movies_fam,(! (is.na(movies_fam$profit)) & (movies_fam$genre == i)))); j = j+1} # calculate ratio and save to a vector
+
+ratio_df <- data.frame(Ratio = ratio, Genre = genrelist) # save ratio and related genre to a new dataframe
+ratio_df$Ratio <- as.numeric(as.character(ratio_df$Ratio)) # change factor to numeric 
+ratio_df <- ratio_df[order(ratio_df$Ratio, decreasing = T),] # ordering
+ratio_df
 
 
 ```
+
+* As shown in the table, Horor and Animation have highest ratio of profitable movies, matching our observation from the boxplots.
+* Now, we will take a look at the distribution of profit average (profit per movie) by genres
+
+```{r avgprofitdef, echo = F, include = F}
+
+pf = function(x) {
+  genrelist = c("Action","Adventure","Animation","Biography","Comedy","Crime","Drama","Horror")
+  profit_avg <- c("")
+  j = 1
+  
+  for(i in genrelist) {profit_avg[j] <- mean((subset(x, x$genre == i))$profit, na.rm = T)*(1e-3); j = j + 1}
+  
+  df = data.frame(meanprofit = profit_avg, genreprofit = genrelist)
+  df$meanprofit <- as.numeric(as.character(df$meanprofit))
+  
+  p <- ggplot(df, aes(x="", y=meanprofit, fill = genreprofit)) +
+    geom_bar(width=1, stat = "identity", color = "white") +
+    coord_polar("y", start=0) +
+    guides(fill=guide_legend(title="Genre")) +
+    theme(axis.text  = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
+    geom_text(aes(label = paste0( scales::percent(meanprofit / sum(meanprofit)))), position = position_stack(vjust = 0.5))
+  
+
+   return(p)
+  
+}
+```
+
+
+```{r pltProfit, echo=F}
+
+# comparision of  profit per movie of each genre across different periods of time
+
+pf(movies_new) +
+  ggtitle("Profit Average distribution by Genres") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+ 
+pf(movies1) +
+  ggtitle("Profit Average distribution by Genres in 1986-1999") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+ 
+pf(movies2) +
+  ggtitle("Profit Average distribution by Genres in 2000-2009") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+ 
+pf(movies3) +
+  ggtitle("Profit Average distribution by Genres in 2010-2016") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+  
+  
+
+
+```
+
+* As we see from our pie charts, Animation is the genre giving most profit per movie. It is understandable since Animation does not require budget to hire actors and investment on visual effects and movie set.
+* Adventure and Horror places next since those genres also do not require a lot of investment but achieve good income.
+* Although Action is the one of the genres with most votes, it do not earn good profit. The reason is that Action movies require a considerable investment on actors, visual effects and movie set which cost a lot of expenditure.
+
+
+Calculate profit and mapping plot (x=budget, y=profit, color by genre/rating)
+
+```{r mappingProfit, echo=F, include = T, warning = F}
+ggplot() +
+  geom_point(data=movies_fam, mapping=aes(x=(budget*(1e-6)), y=(profit*(1e-6)), col = genre)) +
+  xlab("Budget (millions USD)") +
+  ylab("Profit (millions USD)") +
+  ggtitle("Profit vs Budget map") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+* As we see that, low budget movies tend to make profit, while higher budget movies are at risk of having losses: As budget value increases, the range of gross-loss value also increases.
+* High-profit movies (mostly action genre) require pretty high budgets (more than `r quantile(movies_fam$budget, 0.95, na.rm=T)*(1e-6)` m$, i.e 95 percentile value).
+* Horror seems to have a low budget but their income is impressive, which will be reflected more clearly by Return on Investment plots.
+
+
+#### 5.3 Return on Investment
+
+* Return on Investment is calculated as the ratio of Profit over Budget: Return on Investment (ROI) = (Profit) / (Budget)
+* Return on Investment determines whether a movie is successful.
+
+
+
+
+```{r mappingROI, echo=F, include = T, warning = F}
+
+# plot return on investment ~ budget
+ggplot() +
+  geom_point(data=movies_fam, mapping=aes(x=(budget*(1e-6)), y=roi, col = genre)) +
+  xlab("Budget (millions USD)") +
+  ylab("Return on Investment (%)") +
+  ggtitle("Return on Investment vs Budget map") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+
+```
+
+* As we claimed, Horror movies have low budget and high profit, resulting in a very high return on investment (ROI=Profit/Budget). However, it is hard for us to visualize other values. We need to remove outliers for a better observation.
+
+* We remove outliers and create new plots:
+
+
+```{r remappingROI, echo=F, include = T, warning = F}
+
+# plot return on investment ~ budget wihout outliers
+ggplot() +
+  geom_point(data=subset(movies_fam,! movies_fam$roi%in%boxplot(roi ~ genre, data=movies_fam, plot = F)$out), mapping=aes(x=(budget*(1e-6)), y=roi, col = genre)) +
+  xlab("Budget (millions USD)") +
+  ylab("Return on Investment (%)") +
+  ggtitle(("Return on Investment vs Budget map without outliers")) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+# boxplot ROI by genres without outliers
+ggplot(data=subset(movies_fam,! movies_fam$roi%in%boxplot(roi ~ genre, data=movies_fam, plot = F)$out), aes(x=genre, y=roi, fill=genre)) +
+  geom_boxplot() +
+  xlab("Genre") +
+  ylab("Return on Investment (%)") +
+  ggtitle(("Return on Investment distribution by genres without outliers")) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+  
+
+```
+
+* As expected, Horror movies still possess high return on investment. Action movies which often required high expenditures have low return on investment despite their high incomes.
+
+* The Return on Investment reduces as the budget increases.
+
+#### 5.4 Profit and Votes Relationship
+
+```{r ProfitvsVotes, echo=F, include = T, warning = F}
+ggplot() +
+  geom_point(data=movies_fam, mapping=aes(x=votes, y=(profit*(1e-6)), col = genre)) +
+  xlab("Votes") +
+  ylab("Profit (millions USD)") +
+  ggtitle("Profit vs Votes map") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+* There is no clear relationship between profit and votes. Votes seem not to be a factor to profit.
+
+* The only thing we see is that movies with more than 500,000 votes seem to have a safe income, most of these movies have positive profits. The major of movies with net-losses belong to the group of below-500,000 votes movies.
+
+#### 5.5 Profit and Scores Relationship
+
+```{r ProfitvsScore, echo=F, include = T, warning = F}
+ggplot() +
+  geom_point(data=movies_fam, mapping=aes(x=score, y=(profit*(1e-6)), col = genre)) +
+  xlab("Score") +
+  ylab("Profit (millions USD)") +
+  ggtitle("Profit vs Score map") +
+  geom_vline(linetype="dashed", aes(xintercept = 3.5)) +
+  geom_hline(linetype="dashed", aes(yintercept = 350)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+
+* Score seems not to contribute a lot to profit. There are only two remarkle features: Movies that earn very high profits (more than 350 m$) often achieve good scores (around 7.0), whereas very low score movies (less than 3.5) earn small profits and can also have net-losses.
+
+* Except movies with significantly high profits or significantly low scores, the others have their profits vary widely and unpredictably in every score grade.
+
+
+### Chapter 6: Movie industry in different countries
+#### 6.1 SMART Question
+##### Which country has the most number of published films and movies over 30 years and does this country can represent for the whole dataset in reference to movie genres?
+
+#### 6.2 Country with the highest number of movies
+
+```{r country, echo = F}
+
+# Name the country with max counts
+
+name_max <- names(which.max(table(movies_new$country)))
+
+# percentage that country accounts for
+
+pp_max <- nrow(subset(movies_new, movies_new$country == name_max))*100 / nrow(movies_new)
+
+```
+
+* The country with the most number of published movies over 30 years is `r name_max`.
+* `r name_max` accounts for approximately `r round(pp_max)` percentage of total number of movies.
+
+
+#### 6.3 Test if the country can represent the whole dataset
+
+```{r GoodnessOfFit, echo = F, include = T}
+
+USA_movies <- subset(movies_fam, movies_fam$country == "USA")
+
+exp_freq <- c("")
+USA_freq <- c("")
+
+# calculate expected frequencies
+j = 1
+for(i in genrelist) {exp_freq[j] <- nrow(subset(movies_fam, movies_fam$genre == i))/ nrow(movies_fam); j = j + 1}
+exp_freq <- as.numeric(as.character(exp_freq))
+
+# calculate observed frequencies
+k = 1
+for(i in genrelist) {USA_freq[k] <- nrow(subset(USA_movies, USA_movies$genre == i)); k = k + 1}
+USA_freq <- as.numeric(as.character(USA_freq))
+
+# Chi-test for Goodness of Fit
+chiGoF <- chisq.test(USA_freq, p = exp_freq)
+
+
+# results
+chiGoF
+
+
+
+```
+
+* Null Hypothesis: The USA data distribution matches the whole dataset.
+* The p-value of the test is `r chiGoF$p.value` which is much smaller than significance level 0.05.
+* We reject the null, the USA data distribution does not match the whole dataset at 0.05 level.
+
 
 ### Chapter 7: Conclusion
