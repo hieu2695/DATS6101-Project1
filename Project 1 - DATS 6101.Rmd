@@ -690,7 +690,7 @@ summary(movies_fam$profit)
 
 #### 5.3 Profit by genres
 
-In this part, we will 
+In this part, we will identify which genre earns most profit.
 
 
 ```{r profitboxplots}
